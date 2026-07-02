@@ -1,0 +1,17 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - yum install -y openssh git
+
+  pre_build:
+    commands:
+      - mkdir -p ~/.ssh
+      - aws ssm get-parameter --name "/deploy/key" --with-decryption --query Parameter.Value --output text > ~/.ssh/id_rsa
+      - chmod 400 ~/.ssh/id_rsa
+      - ssh-keyscan -H $EC2_IP >> ~/.ssh/known_hosts
+
+  build:
+    commands:
+      - ssh ec2-user@$EC2_IP "cd ~/app && git pull && npm install && pkill -f app.js || true && nohup node app.js > output.log 2>&1 &"
